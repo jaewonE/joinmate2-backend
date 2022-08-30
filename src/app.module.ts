@@ -2,6 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './user/entities/user.entity';
+import { UserModule } from './user/user.module';
+import { CommonModule } from './common/common.module';
+import { Chat } from './chat/entities/chat.entity';
+import { ChatRoom } from './chatRoom/entities/chatRoom.entity';
 
 @Module({
   imports: [
@@ -31,8 +36,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
           }),
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV !== 'production',
-      entities: [],
+      entities: [User, Chat, ChatRoom],
     }),
+    CommonModule,
+    UserModule,
   ],
   controllers: [],
   providers: [],
