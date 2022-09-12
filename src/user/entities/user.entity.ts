@@ -4,28 +4,53 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
-  ManyToOne,
+  PrimaryColumn,
 } from 'typeorm';
-import { IsArray, IsEmail, IsOptional, IsString } from 'class-validator';
-import { CoreEntity } from '../../common/entities/core.entity';
+import {
+  IsArray,
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { ChatRoom } from '../../chatRoom/entities/chatRoom.entity';
 
+export enum SignInType {
+  EMAIL = 'email',
+  GOOGLE = 'google',
+}
 @Entity('User')
-export class User extends CoreEntity {
+export class User {
+  @PrimaryColumn()
+  @IsString()
+  uid: string;
+
+  @Column({
+    type: 'enum',
+    enum: SignInType,
+    default: SignInType.EMAIL,
+  })
+  @IsOptional()
+  @IsEnum(SignInType)
+  signInType?: SignInType;
+
   @CreateDateColumn()
-  updateAt: Date;
+  createAt: Date;
 
   @Column()
   @IsString()
   name: string;
 
+  @Column()
   @Column({ unique: true })
   @IsEmail()
   email: string;
 
-  @Column()
-  @IsString()
-  password: string;
+  @Column({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  emailVerified?: boolean;
 
   @Column({ nullable: true })
   @IsOptional()
@@ -37,10 +62,12 @@ export class User extends CoreEntity {
   @IsString()
   bgCoverImg?: string;
 
-  @ManyToMany(() => User)
-  @JoinTable({ joinColumn: { name: 'User_id_1' } })
-  @IsArray()
-  friends: User[];
+  @ManyToMany(() => User, (user) => user.following)
+  @JoinTable()
+  followers: User[];
+
+  @ManyToMany(() => User, (user) => user.followers)
+  following: User[];
 
   @ManyToMany(() => ChatRoom, (chatRoom: ChatRoom) => chatRoom.users)
   @JoinTable()

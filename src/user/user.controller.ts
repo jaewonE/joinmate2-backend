@@ -15,10 +15,10 @@ import {
   CreateAccountInput,
   CreateAccountOutput,
   FindUserOutput,
-  SignInInput,
-  SignInOutput,
+  SignTokenInput,
+  SignTokenOutput,
   UpdateUserInput,
-} from './dtos/userCRUD.dto';
+} from './dtos/user.dto';
 import { User } from './entities/user.entity';
 import { JwtGuard } from './guards/user.guard';
 import { JwtIdGuard } from './guards/userId.guard';
@@ -28,12 +28,6 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get()
-  @UseGuards(JwtGuard)
-  getUser(@GetUser() user: User): User {
-    return user;
-  }
-
   @Post()
   createAccount(
     @Body() createAccountInput: CreateAccountInput,
@@ -41,14 +35,20 @@ export class UserController {
     return this.userService.createAccount(createAccountInput);
   }
 
-  @Get('find/:id')
-  findUser(@Param('id') findUserId: number): Promise<FindUserOutput> {
-    return this.userService.findUser({ id: findUserId });
+  @Get('find/:uid')
+  findUser(@Param('uid') findUserUid: string): Promise<FindUserOutput> {
+    return this.userService.findUser({ uid: findUserUid });
   }
 
   @Get('search/:email')
   searchUser(@Param('email') searchUserEmail: string): Promise<FindUserOutput> {
     return this.userService.searchUser({ email: searchUserEmail });
+  }
+
+  @Get()
+  @UseGuards(JwtGuard)
+  getUser(@GetUser() user: User): User {
+    return user;
   }
 
   @Patch()
@@ -62,12 +62,25 @@ export class UserController {
 
   @Delete()
   @UseGuards(JwtIdGuard)
-  deleteUser(@GetUserId() userId: number): Promise<CoreOuput> {
-    return this.userService.deleteUser(userId);
+  deleteUser(@GetUserId() userUid: string): Promise<CoreOuput> {
+    return this.userService.deleteUser(userUid);
   }
 
   @Post('signin')
-  signIn(@Body() signinInput: SignInInput): Promise<SignInOutput> {
-    return this.userService.signIn(signinInput);
+  signToken(@Body() signTokenInput: SignTokenInput): Promise<SignTokenOutput> {
+    return this.userService.signToken(signTokenInput);
   }
+
+  /* TODO
+  getChatRooms
+
+  createChatRoom
+  addMembers(초대장 없이 내가 초대하면 자동참가)
+  updateChatRoom
+  exitChatRoom(마지막 인원이 나가면 자동으로 삭제(deleteChatRoom 서비스 제작(controller 없이))
+
+
+  newChat
+  deleteChat(진짜 삭제되는 것이 아닌 삭제처리: socket을 이용해 삭제하였다고 통보: 프런트에서 삭제)
+   */
 }

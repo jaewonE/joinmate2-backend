@@ -1,12 +1,16 @@
 import { PartialType, PickType } from '@nestjs/swagger';
-import { IsInt, IsObject, IsOptional, IsString, Min } from 'class-validator';
+import { IsObject, IsOptional, IsString } from 'class-validator';
 import { CoreOuput } from '../../common/dtos/coreOutput.dto';
 import { User } from '../entities/user.entity';
 
 export class CreateAccountInput extends PickType(User, [
-  'email',
-  'password',
+  'uid',
   'name',
+  'email',
+  'emailVerified',
+  'signInType',
+  'coverImg',
+  'bgCoverImg',
 ]) {}
 
 export class CreateAccountOutput extends CoreOuput {
@@ -15,15 +19,15 @@ export class CreateAccountOutput extends CoreOuput {
   token?: string;
 }
 
-export class SignInInput extends PickType(User, ['email', 'password']) {}
+export class SignTokenInput extends PickType(User, ['uid']) {}
 
-export class SignInOutput extends CoreOuput {
+export class SignTokenOutput extends CoreOuput {
   @IsOptional()
   @IsString()
   token?: string;
 }
 
-export class FindUserInput extends PickType(User, ['id']) {}
+export class FindUserInput extends PickType(User, ['uid']) {}
 
 export class SearchUserInput extends PickType(User, ['email']) {}
 
@@ -34,5 +38,5 @@ export class FindUserOutput extends CoreOuput {
 }
 
 export class UpdateUserInput extends PartialType(
-  PickType(User, ['name', 'email', 'password', 'coverImg', 'bgCoverImg']),
+  PickType(User, ['name', 'email', 'signInType', 'coverImg', 'bgCoverImg']),
 ) {}

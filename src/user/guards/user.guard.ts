@@ -16,10 +16,10 @@ export class JwtGuard implements CanActivate {
       token = httpContext.headers[JWT_KEY];
       if (token) {
         const decoded = this.jwtService.verify(token.toString());
-        if (typeof decoded === 'object' && decoded.hasOwnProperty('id')) {
-          const userId = Number(decoded['id']);
+        if (typeof decoded === 'object' && decoded.hasOwnProperty('uid')) {
+          const userUid = String(decoded['uid']);
           const { status, user } = await this.userService.findUser({
-            id: userId,
+            uid: userUid,
           });
           if (status && user) {
             httpContext['user'] = user;

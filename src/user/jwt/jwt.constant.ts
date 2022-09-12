@@ -1,1 +1,1 @@
-export const JWT_KEY = 'x-jwt';
+export const JWT_KEY = 'uid-jwt';

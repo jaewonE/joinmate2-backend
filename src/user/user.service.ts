@@ -8,10 +8,10 @@ import {
   FindUserInput,
   FindUserOutput,
   SearchUserInput,
-  SignInInput,
-  SignInOutput,
+  SignTokenInput,
+  SignTokenOutput,
   UpdateUserInput,
-} from './dtos/userCRUD.dto';
+} from './dtos/user.dto';
 import { User } from './entities/user.entity';
 import { JwtService } from './jwt/jwt.service';
 import * as bcrypt from 'bcrypt';
@@ -23,31 +23,12 @@ export class UserService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async hashPassword(inputPw: string): Promise<string> {
-    try {
-      return await bcrypt.hash(inputPw, 10);
-    } catch (e) {
-      console.error(e);
-      throw new InternalServerErrorException();
-    }
-  }
-
-  async checkPassword(password, inputPw: string): Promise<boolean> {
-    try {
-      return await bcrypt.compare(inputPw, password);
-    } catch (e) {
-      console.error(e);
-      throw new InternalServerErrorException();
-    }
-  }
-
   async createAccount({
     email,
-    password,
-    name,
+    uid,
+    ...payload
   }: CreateAccountInput): Promise<CreateAccountOutput> {
     try {
-      console.log(email, password, name);
       const isExist = await this.userDB.findOne({ where: { email } });
       if (isExist) {
         return {
@@ -55,11 +36,11 @@ export class UserService {
           error: `An account with Email ${email} already exists.`,
         };
       }
-      const hashPw = await this.hashPassword(password);
-      const { id } = await this.userDB.save(
-        this.userDB.create({ email, password: hashPw, name }),
+      const result = await this.userDB.save(
+        this.userDB.create({ email, uid, ...payload }),
       );
-      return { status: true, token: this.jwtService.sign({ id }) };
+      console.log(result);
+      return { status: true, token: this.jwtService.sign({ uid }) };
     } catch (e) {
       return {
         status: false,
@@ -69,9 +50,9 @@ export class UserService {
     }
   }
 
-  async findUser({ id }: FindUserInput): Promise<FindUserOutput> {
+  async findUser({ uid }: FindUserInput): Promise<FindUserOutput> {
     try {
-      const user = await this.userDB.findOne({ where: { id } });
+      const user = await this.userDB.findOne({ where: { uid } });
       return { status: true, user };
     } catch (e) {
       return {
@@ -95,30 +76,21 @@ export class UserService {
     }
   }
 
-  async updateUser(
-    user: User,
-    { email, password, coverImg, name, bgCoverImg }: UpdateUserInput,
-  ): Promise<CoreOuput> {
+  async updateUser(user: User, payload: UpdateUserInput): Promise<CoreOuput> {
     try {
-      if (email) {
+      if (payload.email) {
         const isExist = await this.userDB.findOne({
-          where: { email },
+          where: { email: payload.email },
         });
         if (isExist) {
           return {
             status: false,
-            error: `An account with Email ${email} already exists.`,
+            error: `An account with Email ${payload.email} already exists.`,
           };
         }
-        user.email = email;
+        user.email = payload.email;
       }
-      if (password) {
-        const newPw = await this.hashPassword(password);
-        user.password = newPw;
-      }
-      if (coverImg) user.coverImg = coverImg;
-      if (name) user.name = name;
-      if (bgCoverImg) user.bgCoverImg = bgCoverImg;
+      user = { ...user, ...payload };
       await this.userDB.save(this.userDB.create(user));
       return { status: true };
     } catch (e) {
@@ -129,11 +101,11 @@ export class UserService {
     }
   }
 
-  async deleteUser(id: number): Promise<CoreOuput> {
+  async deleteUser(uid: string): Promise<CoreOuput> {
     try {
-      const user = await this.userDB.findOne({ where: { id } });
+      const user = await this.userDB.findOne({ where: { uid } });
       if (user) {
-        await this.userDB.delete({ id: user.id });
+        await this.userDB.delete({ uid: user.uid });
         return { status: true };
       }
       return {
@@ -148,15 +120,11 @@ export class UserService {
     }
   }
 
-  async signIn({ email, password }: SignInInput): Promise<SignInOutput> {
+  async signToken({ uid }: SignTokenInput): Promise<SignTokenOutput> {
     try {
-      const user = await this.userDB.findOne({ where: { email } });
+      const user = await this.userDB.findOne({ where: { uid } });
       if (user) {
-        const status = await this.checkPassword(user.password, password);
-        if (status) {
-          return { status, token: this.jwtService.sign({ id: user.id }) };
-        }
-        return { status: false, error: 'Wrong password' };
+        return { status: true, token: this.jwtService.sign({ uid: user.uid }) };
       }
       return {
         status: false,
@@ -165,7 +133,7 @@ export class UserService {
     } catch (e) {
       return {
         status: false,
-        error: 'Unexpected error from deleteUser',
+        error: 'Unexpected error from signToken',
       };
     }
   }
